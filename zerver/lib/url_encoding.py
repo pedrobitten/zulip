@@ -6,7 +6,7 @@ import re2
 
 from zerver.lib.topic import get_topic_from_message_info
 from zerver.lib.types import UserDisplayRecipient
-from zerver.models import Realm, Stream, UserProfile, Message
+from zerver.models import Realm, Stream, UserProfile, Message, recipients
 
 hash_replacements = {
     "%": ".",
@@ -181,15 +181,25 @@ def stream_message_url(
 
 
 def pm_message_url(
-    realm: Realm, message: dict[str, Any], *, conversation_link: bool = False
+    realm: Realm, message: Message, *, conversation_link: bool = False
 ) -> str:
     if conversation_link:
         with_or_near = "with"
     else:
         with_or_near = "near"
 
-    message_id = str(message["id"])
-    user_ids = [recipient["id"] for recipient in message["display_recipient"]]
+    message_id = str(message.id)
+    user_ids = []
+
+    if message.recipient.type == recipients.PERSONAL:
+        user_ids.append(message.recipient.type_id)
+    else:
+
+        user_ids = list(
+            UserProfile.objects.filter(
+                message__recipient=message.recipient
+            ).values_list("id", flat=True)
+        )
 
     direct_message_slug = encode_user_ids(user_ids)
 
