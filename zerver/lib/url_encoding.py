@@ -6,7 +6,7 @@ import re2
 
 from zerver.lib.topic import get_topic_from_message_info
 from zerver.lib.types import UserDisplayRecipient
-from zerver.models import Realm, Stream, UserProfile
+from zerver.models import Realm, Stream, UserProfile, Message
 
 hash_replacements = {
     "%": ".",
@@ -132,9 +132,9 @@ def topic_narrow_url(*, realm: Realm, stream: Stream, topic_name: str) -> str:
 
 
 def message_link_url(
-    realm: Realm, message: dict[str, Any], *, conversation_link: bool = False
+    realm: Realm, message: Message, *, conversation_link: bool = False
 ) -> str:
-    if message["type"] == "stream":
+    if message.type == "stream":
         url = stream_message_url(
             realm=realm,
             message=message,
@@ -151,16 +151,18 @@ def message_link_url(
 
 
 def stream_message_url(
-    realm: Realm, message: dict[str, Any], *, conversation_link: bool = False
+    realm: Realm, message: Message, *, conversation_link: bool = False
 ) -> str:
     if conversation_link:
         with_or_near = "with"
     else:
         with_or_near = "near"
-    message_id = str(message["id"])
-    stream_id = message["stream_id"]
-    stream_name = message["display_recipient"]
-    topic_name = get_topic_from_message_info(message)
+        
+    message_id = str(message.id)
+    stream = Stream.objects.get(id = message.recipient.type_id)
+    stream_id = stream.id 
+    stream_name = stream.name 
+    topic_name = message.topic_name()
     encoded_topic_name = encode_hash_component(topic_name)
     encoded_stream = encode_channel(stream_id, stream_name)
 
