@@ -348,6 +348,9 @@ export function enable_or_disable_permission_settings_in_edit_panel(
 
     const $permission_pill_container_elements =
         $advanced_configurations_container.find(".pill-container");
+    $permission_pill_container_elements
+        .find(".input")
+        .prop("contenteditable", sub.can_change_stream_permissions_requiring_metadata_access);
 
     $stream_settings
         .find(".channel-folder-widget-container button")
@@ -355,11 +358,21 @@ export function enable_or_disable_permission_settings_in_edit_panel(
 
     if (!sub.can_change_stream_permissions_requiring_metadata_access) {
         $general_settings_container.find(".default-stream").addClass("control-label-disabled");
-        settings_components.disable_group_permission_setting($permission_pill_container_elements);
+        $permission_pill_container_elements
+            .closest(".input-group")
+            .addClass("group_setting_disabled");
+        settings_components.disable_opening_typeahead_on_clicking_label(
+            $advanced_configurations_container,
+        );
         return;
     }
 
-    settings_components.enable_group_permission_setting($permission_pill_container_elements);
+    $permission_pill_container_elements
+        .closest(".input-group")
+        .removeClass("group_setting_disabled");
+    settings_components.enable_opening_typeahead_on_clicking_label(
+        $advanced_configurations_container,
+    );
 
     update_default_stream_option_state($("#stream_settings"));
     update_private_stream_privacy_option_state($("#stream_settings"));
@@ -384,7 +397,9 @@ export function enable_or_disable_permission_settings_in_edit_panel(
 
         for (const setting_name of settings_config.stream_group_permission_settings_requiring_content_access) {
             const $setting_element = $advanced_configurations_container.find("#id_" + setting_name);
-            settings_components.disable_group_permission_setting($setting_element);
+            $setting_element.find(".input").prop("contenteditable", false);
+            $setting_element.closest(".input-group").addClass("group_setting_disabled");
+            settings_components.disable_opening_typeahead_on_clicking_label($setting_element);
         }
     }
     settings_banner.set_up_upgrade_banners();
