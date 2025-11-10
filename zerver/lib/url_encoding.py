@@ -151,18 +151,16 @@ def message_link_url(
 
 
 def stream_message_url(
-    realm: Realm, message: Message, *, conversation_link: bool = False
+    realm: Realm, message: dict[str, Any], *, conversation_link: bool = False
 ) -> str:
     if conversation_link:
         with_or_near = "with"
     else:
         with_or_near = "near"
-        
-    message_id = str(message.id)
-    stream = Stream.objects.get(id = message.recipient.type_id)
-    stream_id = stream.id 
-    stream_name = stream.name 
-    topic_name = message.topic_name()
+    message_id = str(message["id"])
+    stream_id = message["stream_id"]
+    stream_name = message["display_recipient"]
+    topic_name = get_topic_from_message_info(message)
     encoded_topic_name = encode_hash_component(topic_name)
     encoded_stream = encode_channel(stream_id, stream_name)
 
@@ -181,25 +179,15 @@ def stream_message_url(
 
 
 def pm_message_url(
-    realm: Realm, message: Message, *, conversation_link: bool = False
+    realm: Realm, message: dict[str, Any], *, conversation_link: bool = False
 ) -> str:
     if conversation_link:
         with_or_near = "with"
     else:
         with_or_near = "near"
 
-    message_id = str(message.id)
-    user_ids = []
-
-    if message.recipient.type == recipients.PERSONAL:
-        user_ids.append(message.recipient.type_id)
-    else:
-
-        user_ids = list(
-            UserProfile.objects.filter(
-                message__recipient=message.recipient
-            ).values_list("id", flat=True)
-        )
+    message_id = str(message["id"])
+    user_ids = [recipient["id"] for recipient in message["display_recipient"]]
 
     direct_message_slug = encode_user_ids(user_ids)
 
@@ -213,6 +201,7 @@ def pm_message_url(
     ]
     full_url = "/".join(parts)
     return full_url
+
 
 
 def append_url_query_string(original_url: str, query: str) -> str:
